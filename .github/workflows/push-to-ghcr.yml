@@ -21,6 +21,6 @@ jobs:
       - name: Build and publish a Docker image for macbre/nginx-http3
         uses: macbre/push-to-ghcr@v8
         with:
-          image_name: qwerzl/nginx-http3
+          image_name: qwerzl/docker-nginx-http3
           github_token: ${{ secrets.GITHUB_TOKEN }}
           # docker_io_token: ${{ secrets.DOCKER_IO_ACCESS_TOKEN }}
