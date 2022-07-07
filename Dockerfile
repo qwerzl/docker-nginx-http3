@@ -65,11 +65,40 @@ ARG CONFIG="\
 		--add-module=/usr/src/headers-more-nginx-module-$HEADERS_MORE_VERSION \
 		--add-dynamic-module=/ngx_http_geoip2_module \
 	"
+	
+FROM nginx:1.23.0-alpine AS builder
 
-FROM "nginx:alpine" AS builder
+# Our NCHAN version
+ENV NGINX_VERSION 1.23.0
+ENV NJS_VERSION 0.7.5
 
-# FROM "alpine:latest"
+# For latest build deps, see https://github.com/nginxinc/docker-nginx/blob/master/mainline/alpine/Dockerfile
+RUN apk add --no-cache --virtual .build-deps \
+  gcc \
+  libc-dev \
+  make \
+  openssl-dev \
+  pcre-dev \
+  zlib-dev \
+  linux-headers \
+  curl \
+  gnupg \
+  libxslt-dev \
+  gd-dev \
+  geoip-dev
 
+# Download sources
+RUN wget "http://nginx.org/download/nginx-${NGINX_VERSION}.tar.gz" -O nginx.tar.gz && \
+    wget "https://github.com/nginx/njs/archive/${NJS_VERSION}.tar.gz" -O njs.tar.gz
+
+# Reuse same cli arguments as the nginx:alpine image used to build
+RUN CONFARGS=$(nginx -V 2>&1 | sed -n -e 's/^.*arguments: //p') \
+    tar -zxC /usr/local -f nginx.tar.gz && \
+    tar -xzvf "njs.tar.gz" -C /usr/local/nginx-${NGINX_VERSION} && \
+    NJSDIR="/usr/local/nginx-${NGINX_VERSION}/njs-${NJS_VERSION}/nginx" && \
+    cd /usr/local/nginx-${NGINX_VERSION} && \
+   ./configure --with-compat $CONFARGS --add-dynamic-module=$NJSDIR && \
+    make modules && make install
 
 FROM alpine:3.14 AS base
 LABEL maintainer="NGINX Docker Maintainers <docker-maint@nginx.com>"
@@ -196,15 +225,6 @@ ARG NGINX_COMMIT
 ENV NGINX_VERSION $NGINX_VERSION
 ENV NGINX_COMMIT $NGINX_COMMIT
 
-COPY --from=builder /usr/bin/njs /usr/bin/njs
-COPY --from=builder /usr/lib/libpcre.so.* \
-                    /usr/lib/libedit.so.* \
-                    /usr/lib/libncursesw.so.* \
-                    /usr/lib/
-RUN ls /usr/lib/libpcre.so.*.* | xargs -I {} ln -sf {} $(echo {} | cut -b 1-21) && \
-    ls /usr/lib/libedit.so.*.* | xargs -I {} ln -sf {} $(echo {} | cut -b 1-21) && \
-    ls /usr/lib/libncursesw.so.*.* | xargs -I {} ln -sf {} $(echo {} | cut -b 1-25)
-
 COPY --from=base /tmp/runDeps.txt /tmp/runDeps.txt
 COPY --from=base /etc/nginx /etc/nginx
 COPY --from=base /usr/lib/nginx/modules/*.so /usr/lib/nginx/modules/
@@ -212,6 +232,9 @@ COPY --from=base /usr/sbin/nginx /usr/sbin/
 COPY --from=base /usr/local/lib/perl5/site_perl /usr/local/lib/perl5/site_perl
 COPY --from=base /usr/bin/envsubst /usr/local/bin/envsubst
 COPY --from=base /etc/ssl/dhparam.pem /etc/ssl/dhparam.pem
+
+COPY --from=builder /usr/local/nginx/modules/ngx_http_js_module.so /usr/local/nginx/modules/ngx_http_js_module.so
+
 
 RUN \
 	addgroup -S nginx \
