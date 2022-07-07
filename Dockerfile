@@ -66,17 +66,9 @@ ARG CONFIG="\
 		--add-dynamic-module=/ngx_http_geoip2_module \
 	"
 
-FROM "nginx:latest" AS builder
+FROM "nginx:alpine" AS builder
 
-FROM "$DIST_OS"
-COPY --from=builder /usr/bin/njs /usr/bin/njs
-COPY --from=builder /usr/lib/libpcre.so.* \
-                    /usr/lib/libedit.so.* \
-                    /usr/lib/libncursesw.so.* \
-                    /usr/lib/
-RUN ls /usr/lib/libpcre.so.*.* | xargs -I {} ln -sf {} $(echo {} | cut -b 1-21) && \
-    ls /usr/lib/libedit.so.*.* | xargs -I {} ln -sf {} $(echo {} | cut -b 1-21) && \
-    ls /usr/lib/libncursesw.so.*.* | xargs -I {} ln -sf {} $(echo {} | cut -b 1-25)
+# FROM "alpine:latest"
 
 
 FROM alpine:3.14 AS base
@@ -203,6 +195,15 @@ ARG NGINX_COMMIT
 
 ENV NGINX_VERSION $NGINX_VERSION
 ENV NGINX_COMMIT $NGINX_COMMIT
+
+COPY --from=builder /usr/bin/njs /usr/bin/njs
+COPY --from=builder /usr/lib/libpcre.so.* \
+                    /usr/lib/libedit.so.* \
+                    /usr/lib/libncursesw.so.* \
+                    /usr/lib/
+RUN ls /usr/lib/libpcre.so.*.* | xargs -I {} ln -sf {} $(echo {} | cut -b 1-21) && \
+    ls /usr/lib/libedit.so.*.* | xargs -I {} ln -sf {} $(echo {} | cut -b 1-21) && \
+    ls /usr/lib/libncursesw.so.*.* | xargs -I {} ln -sf {} $(echo {} | cut -b 1-25)
 
 COPY --from=base /tmp/runDeps.txt /tmp/runDeps.txt
 COPY --from=base /etc/nginx /etc/nginx
