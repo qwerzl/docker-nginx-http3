@@ -98,6 +98,7 @@ RUN CONFARGS=$(nginx -V 2>&1 | sed -n -e 's/^.*arguments: //p') \
     tar -xzvf "njs.tar.gz" -C /usr/local/nginx-${NGINX_VERSION} && \
     NJSDIR="/usr/local/nginx-${NGINX_VERSION}/njs-${NJS_VERSION}/nginx" && \
     cd /usr/local/nginx-${NGINX_VERSION} && \
+    ls && pwd \
    ./configure --with-compat $CONFARGS --add-dynamic-module=$NJSDIR && \
     make modules && make install
 
