@@ -69,8 +69,9 @@ ARG CONFIG="\
 FROM nginx:1.23.0-alpine AS builder
 
 # Our NCHAN version
-ENV NGINX_VERSION 1.23.0
+ENV NGINX_VERSION 1.21.6
 ENV NJS_VERSION 0.7.5
+ENV NGINX_COMMIT 7c2adf237091
 
 # For latest build deps, see https://github.com/nginxinc/docker-nginx/blob/master/mainline/alpine/Dockerfile
 RUN apk add --no-cache --virtual .build-deps \
@@ -88,12 +89,12 @@ RUN apk add --no-cache --virtual .build-deps \
   geoip-dev
 
 # Download sources
-RUN wget "http://nginx.org/download/nginx-${NGINX_VERSION}.tar.gz" -O nginx.tar.gz && \
+RUN wget "https://hg.nginx.org/nginx-quic/archive/quic.tar.gz" -O nginx.tar.gz && \
     wget "https://github.com/nginx/njs/archive/${NJS_VERSION}.tar.gz" -O njs.tar.gz
 
 # Reuse same cli arguments as the nginx:alpine image used to build
 RUN CONFARGS=$(nginx -V 2>&1 | sed -n -e 's/^.*arguments: //p') \
-    tar -zxC /usr/local -f nginx.tar.gz && \
+    hg clone -b quic --rev ${NGINX_COMMIT} https://hg.nginx.org/nginx-quic /usr/local/nginx-${NGINX_VERSION} && \
     tar -xzvf "njs.tar.gz" -C /usr/local/nginx-${NGINX_VERSION} && \
     NJSDIR="/usr/local/nginx-${NGINX_VERSION}/njs-${NJS_VERSION}/nginx" && \
     cd /usr/local/nginx-${NGINX_VERSION} && \
