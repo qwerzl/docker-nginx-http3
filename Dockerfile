@@ -86,7 +86,7 @@ RUN apk add --no-cache --virtual .build-deps \
   gnupg \
   libxslt-dev \
   gd-dev \
-  geoip-dev
+  geoip-dev mercurial
 
 # Download sources
 RUN wget "https://hg.nginx.org/nginx-quic/archive/quic.tar.gz" -O nginx.tar.gz && \
