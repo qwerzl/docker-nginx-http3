@@ -64,43 +64,8 @@ ARG CONFIG="\
 		--add-module=/usr/src/ngx_brotli \
 		--add-module=/usr/src/headers-more-nginx-module-$HEADERS_MORE_VERSION \
 		--add-dynamic-module=/ngx_http_geoip2_module \
+		--add-dynamic-module=/usr/src/njs/nginx
 	"
-	
-FROM nginx:1.23.0-alpine AS builder
-
-# Our NCHAN version
-ENV NGINX_VERSION 1.21.6
-ENV NJS_VERSION 0.7.5
-ENV NGINX_COMMIT 7c2adf237091
-
-# For latest build deps, see https://github.com/nginxinc/docker-nginx/blob/master/mainline/alpine/Dockerfile
-RUN apk add --no-cache --virtual .build-deps \
-  gcc \
-  libc-dev \
-  make \
-  openssl-dev \
-  pcre-dev \
-  zlib-dev \
-  linux-headers \
-  curl \
-  gnupg \
-  libxslt-dev \
-  gd-dev \
-  geoip-dev mercurial
-
-# Download sources
-RUN wget "https://hg.nginx.org/nginx-quic/archive/quic.tar.gz" -O nginx.tar.gz && \
-    wget "https://github.com/nginx/njs/archive/${NJS_VERSION}.tar.gz" -O njs.tar.gz
-
-# Reuse same cli arguments as the nginx:alpine image used to build
-RUN CONFARGS=$(nginx -V 2>&1 | sed -n -e 's/^.*arguments: //p') \
-    hg clone -b quic --rev ${NGINX_COMMIT} https://hg.nginx.org/nginx-quic /usr/local/nginx-${NGINX_VERSION} && \
-    tar -xzvf "njs.tar.gz" -C /usr/local/nginx-${NGINX_VERSION} && \
-    NJSDIR="/usr/local/nginx-${NGINX_VERSION}/njs-${NJS_VERSION}/nginx" && \
-    cd /usr/local/nginx-${NGINX_VERSION} && \
-    ls && pwd \
-   ./configure --with-compat $CONFARGS --add-dynamic-module=$NJSDIR && \
-    make modules && make install
 
 FROM alpine:3.14 AS base
 LABEL maintainer="NGINX Docker Maintainers <docker-maint@nginx.com>"
@@ -165,6 +130,10 @@ RUN \
 	&& git fetch --depth 1 origin $NGX_BROTLI_COMMIT \
 	&& git checkout --recurse-submodules -q FETCH_HEAD \
 	&& git submodule update --init --depth 1
+	
+RUN \
+       echo "Cloning njs repo ..." \
+       && hg clone http://hg.nginx.org/njs
 
 RUN \
   echo "Cloning boringssl ..." \
@@ -234,9 +203,6 @@ COPY --from=base /usr/sbin/nginx /usr/sbin/
 COPY --from=base /usr/local/lib/perl5/site_perl /usr/local/lib/perl5/site_perl
 COPY --from=base /usr/bin/envsubst /usr/local/bin/envsubst
 COPY --from=base /etc/ssl/dhparam.pem /etc/ssl/dhparam.pem
-
-COPY --from=builder /usr/local/nginx/modules/ngx_http_js_module.so /usr/local/nginx/modules/ngx_http_js_module.so
-
 
 RUN \
 	addgroup -S nginx \
