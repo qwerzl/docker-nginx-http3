@@ -64,7 +64,7 @@ ARG CONFIG="\
 		--add-module=/usr/src/ngx_brotli \
 		--add-module=/usr/src/headers-more-nginx-module-$HEADERS_MORE_VERSION \
 		--add-dynamic-module=/ngx_http_geoip2_module \
-		--add-module=/usr/src/njs/nginx"
+		--add-dynamic-module=/usr/src/njs/nginx"
 
 FROM alpine:3.14 AS base
 LABEL maintainer="NGINX Docker Maintainers <docker-maint@nginx.com>"
