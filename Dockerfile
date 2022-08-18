@@ -53,10 +53,13 @@ RUN cd nginx-quic && \
 
 RUN cd nginx-quic && make -j$(nproc)
 RUN cd nginx-quic && make install
-RUN useradd nginx
 RUN mkdir -p /var/cache/nginx /var/log/nginx/
 RUN nginx -V; nginx -t
+
+COPY nginx.conf /etc/nginx/
+RUN timeout 10 nginx
 EXPOSE 80 443
 STOPSIGNAL SIGTERM
+
 
 CMD ["nginx", "-g", "daemon off;"]
