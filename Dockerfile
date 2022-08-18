@@ -56,6 +56,8 @@ RUN cd nginx-quic && make install
 RUN mkdir -p /var/cache/nginx /var/log/nginx/
 RUN nginx -V; nginx -t
 
+RUN echo "-----------------" && ls /usr/lib/nginx/modules && echo "-----------------"
+
 COPY nginx.conf /etc/nginx/
 RUN timeout 10 nginx
 EXPOSE 80 443
