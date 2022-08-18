@@ -1,4 +1,4 @@
-FROM martenseemann/quic-network-simulator-endpoint:latest AS builder
+FROM martenseemann/quic-network-simulator-endpoint:latest
 
 ARG DEBIAN_FRONTEND=noninteractive
 RUN apt-get update
@@ -53,23 +53,10 @@ RUN cd nginx-quic && \
 
 RUN cd nginx-quic && make -j$(nproc)
 RUN cd nginx-quic && make install
-
-
-FROM martenseemann/quic-network-simulator-endpoint:latest
-
-COPY --from=builder /usr/sbin/nginx /usr/sbin/
-COPY --from=builder /etc/nginx /etc/nginx
-
 RUN useradd nginx
 RUN mkdir -p /var/cache/nginx /var/log/nginx/
-
-COPY --from=builder /usr/lib/nginx/modules/*.so /usr/lib/nginx/modules/
-
-# test the configuration
 RUN nginx -V; nginx -t
-
 EXPOSE 80 443
-
 STOPSIGNAL SIGTERM
 
 CMD ["nginx", "-g", "daemon off;"]
