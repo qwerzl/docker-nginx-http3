@@ -63,10 +63,6 @@ COPY --from=builder /etc/nginx /etc/nginx
 RUN useradd nginx
 RUN mkdir -p /var/cache/nginx /var/log/nginx/
 
-COPY nginx.conf nginx.conf.retry nginx.conf.http3 nginx.conf.nodebug /etc/nginx/
-
-COPY run_endpoint.sh .
-RUN chmod +x run_endpoint.sh
 COPY --from=builder /usr/lib/nginx/modules/*.so /usr/lib/nginx/modules/
 
 # test the configuration
